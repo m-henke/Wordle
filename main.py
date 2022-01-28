@@ -1,21 +1,11 @@
+from general import *
 import random as rand
 import pygame
 import time
 
 pygame.init()
-INSTRUCTIONS = [
-    "Blue isn't in the word",
-    "Yellow is in the word but not the right spot",
-    "Green is in the word and the right spot"
-]
 INST_FONT = pygame.font.Font('FallingSky-JKwK.otf', 18)
 FONT = pygame.font.Font('FallingSky-JKwK.otf', 32)
-WIDTH = 900
-HEIGHT = 600
-WINDOW_SIZE = [WIDTH, HEIGHT]
-BOARD_OFFSET = 600
-BOARDER = 50
-FPS = 60
 
 
 # returns list of 5 letter words from txt file
@@ -74,7 +64,7 @@ def update_loc(s, r):
     s += 1
     if s > 4:
         s = 5
-        if r > 4:
+        if r > 3:
             s = r = -1
     return s, r
 
@@ -109,6 +99,8 @@ def add_letter():
     # updates location in board
     cur_square, cur_row = update_loc(cur_square, cur_row)
     if cur_square == -1 and cur_row == -1:
+        for x in range(5):
+            col_board[cur_row][x] = 'red'
         return False
     return True
 
@@ -158,14 +150,6 @@ if __name__ == '__main__':
 
     dictionary = get_dictionary()
     secret_word = dictionary[rand.randint(0, len(dictionary) - 1)]
-    board = [['', '', '', '', ''] for x in range(5)]
-    col_board = [['black', 'black', 'black', 'black', 'black'] for x in range(5)]
-    temp_cols = []
-    cur_square, cur_row = 0, 0
-    playing = True
-    guesses_col = {}
-    guesses = []
-    guesses_shown = 0
 
     while playing:
         clock.tick(FPS)
