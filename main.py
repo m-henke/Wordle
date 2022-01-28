@@ -57,12 +57,13 @@ def draw():
 
     vert_offset = 100
     ifix = 0
-    for i, guess in enumerate(guesses):
-        # letter color
+    for i in range(guesses_shown):
+        guess = guesses[i]
         l, c = guess, guesses_col[guess]
         rend = FONT.render(l, True, c)
         i -= ifix
         screen.blit(rend, [BOARD_OFFSET + (i * 20) + 10, BOARDER + vert_offset])
+
         if i % 10 == 0 and i != 0:
             vert_offset += 25
             ifix += 10
@@ -72,21 +73,21 @@ def draw():
 def update_loc(s, r):
     s += 1
     if s > 4:
-        s = 0
-        r += 1
+        s = 5
         if r > 4:
             s = r = -1
     return s, r
 
 
-def check_word(word):
+def check_win(word):
     if word == secret_word:
         return True
     return False
 
 
 def add_letter():
-    global cur_row, cur_square
+    global cur_row, cur_square, guesses_shown
+
     color = 'blue'
     for i, char in enumerate(secret_word):
         if char == let:
@@ -94,33 +95,60 @@ def add_letter():
                 color = 'green'
                 break
             color = 'yellow'
+
     board[cur_row][cur_square] = let
-    col_board[cur_row][cur_square] = color
+    temp_cols.append(color)
+
     # adds let to list of guesses
     if let not in guesses_col:
         color = 'blue' if color == 'blue' else 'green'
         guesses_col[let] = color
         guesses.append(let)
-
-    # checks if you filled current attempt
-    if cur_square == 4:
-        word = ''.join(board[cur_row])
-        # word wasn't found in the dictionary so retry line
-        if word not in dictionary:
-            cur_square = 0
-            for j in range(len(board[cur_row])):
-                board[cur_row][j] = ''
-                col_board[cur_row][j] = 'black'
-            return True
-        # word guessed
-        if check_word(word):
-            return False
+        guesses.sort()
 
     # updates location in board
     cur_square, cur_row = update_loc(cur_square, cur_row)
     if cur_square == -1 and cur_row == -1:
         return False
     return True
+
+
+def check_word():
+    global cur_square, cur_row, temp_cols, guesses_shown, board
+    word = ''.join(board[cur_row])
+
+    # word wasn't found in the dictionary so retry line
+    if word not in dictionary:
+        for j in range(len(board[cur_row])):
+            board[cur_row][j] = ''
+        temp_cols = []
+        return True
+
+    guesses_shown = len(guesses)
+
+    if check_win(word):
+        for x in range(5):
+            col_board[cur_row][x] = 'green'
+        return False
+
+    for x in range(5):
+        col_board[cur_row][x] = temp_cols[x]
+
+    temp_cols = []
+    cur_square, cur_row = update_loc(cur_square, cur_row)
+
+    if cur_square == -1 and cur_row == -1:
+        return False
+    cur_row += 1
+    return True
+
+
+def back():
+    global cur_square
+    if cur_square > 0:
+        cur_square -= 1
+        board[cur_row][cur_square] = ''
+        temp_cols.pop()
 
 
 if __name__ == '__main__':
@@ -132,10 +160,12 @@ if __name__ == '__main__':
     secret_word = dictionary[rand.randint(0, len(dictionary) - 1)]
     board = [['', '', '', '', ''] for x in range(5)]
     col_board = [['black', 'black', 'black', 'black', 'black'] for x in range(5)]
+    temp_cols = []
     cur_square, cur_row = 0, 0
     playing = True
     guesses_col = {}
     guesses = []
+    guesses_shown = 0
 
     while playing:
         clock.tick(FPS)
@@ -143,8 +173,15 @@ if __name__ == '__main__':
             if event.type == pygame.QUIT:
                 playing = False
             if event.type == pygame.KEYDOWN:
-                let = pygame.key.name(event.key)
-                playing = add_letter()
+                if event.key == pygame.K_SPACE:  # checks word
+                    if cur_square == 5:
+                        playing = check_word()
+                        cur_square = 0
+                elif event.key == pygame.K_BACKSPACE:
+                    back()
+                elif cur_square <= 4:
+                    let = pygame.key.name(event.key)
+                    playing = add_letter()
         draw()
     time.sleep(2)
     pygame.quit()
